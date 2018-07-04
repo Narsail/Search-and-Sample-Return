@@ -160,7 +160,7 @@ def drive(rover, nav_angles, max_vel, stop_forward, go_forward, offset = 0):
                 # Release the brake to allow turning
                 rover.brake = 0
                 # Turn range is +/- 15 degrees, when stopped the next line will induce 4-wheel turning
-                rover.steer = -15
+                rover.steer = -15 if offset > 0 else 15 if rover.steer > 0 else -15
 
         # If we're already in "stop" mode then make different decisions
         elif rover.drive_mode == DriveMode.STOP:
@@ -177,7 +177,7 @@ def drive(rover, nav_angles, max_vel, stop_forward, go_forward, offset = 0):
                     # Release the brake to allow turning
                     rover.brake = 0
                     # Turn range is +/- 15 degrees, when stopped the next line will induce 4-wheel turning
-                    rover.steer = -15 # Could be more clever here about which way to turn
+                    rover.steer = -15 if offset > 0 else 15 if rover.steer > 0 else -15
                 # If we're stopped but see sufficient navigable terrain in front then go!
                 if len(nav_angles) >= go_forward:
                     # Set throttle back to stored value
