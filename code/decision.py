@@ -14,6 +14,7 @@ class Mode(Enum):
 class DriveMode(Enum):
     FORWARD = 0
     STOP = 1
+    STUCK = 2
 
 
 # This is where you can build a decision tree for determining throttle, brake and steer 
@@ -32,6 +33,7 @@ def decision_step(rover):
 
     print()
     print('## Current Mode: {}'.format(rover.mode))
+    print('## Current Drive Mode: {}'.format(rover.drive_mode))
     print()
 
     if rover.mode == Mode.LOCATE_NUGGET:
@@ -100,6 +102,14 @@ def drive(rover, nav_angles, max_vel, stop_forward, go_forward):
         if rover.drive_mode == DriveMode.FORWARD:
             # Check the extent of navigable terrain
             if len(nav_angles) >= stop_forward:
+                if rover.vel <= 0.1 and rover.total_time - rover.stuck_time > 4:
+                    # Set mode to "stuck" and hit the brakes!
+                    rover.throttle = 0
+                    # Set brake to stored brake value
+                    rover.brake = rover.brake_set
+                    rover.steer = 0
+                    rover.drive_mode = DriveMode.STUCK
+                    rover.stuck_time = rover.total_time
                 # If mode is forward, navigable terrain looks good
                 # and velocity is below max, then throttle
                 if rover.vel < max_vel:
@@ -118,6 +128,18 @@ def drive(rover, nav_angles, max_vel, stop_forward, go_forward):
                 rover.brake = rover.brake_set
                 rover.steer = 0
                 rover.drive_mode = DriveMode.STOP
+
+        elif rover.drive_mode == DriveMode.STUCK:
+            # if 1 sec passed go back to previous mode
+            if rover.total_time - rover.stuck_time > 1:
+                rover.drive_mode = DriveMode.FORWARD
+            # Now we're stopped and we have vision data to see if there's a path forward
+            else:
+                rover.throttle = 0
+                # Release the brake to allow turning
+                rover.brake = 0
+                # Turn range is +/- 15 degrees, when stopped the next line will induce 4-wheel turning
+                rover.steer = 15 if rover.steer >= 0 else -15
 
         # If we're already in "stop" mode then make different decisions
         elif rover.drive_mode == DriveMode.STOP:
