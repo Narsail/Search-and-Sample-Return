@@ -23,11 +23,11 @@ def color_thresh_between(img, rgb_thresh=((160, 255), (160, 255), (160, 255))):
 
 
 def image_segmentation(img):
-    ground = color_thresh_between(img)
+    ground = color_thresh_between(img, ((150, 255), (150, 255), (150, 255)))
 
     obstacles = color_thresh_between(img, ((0, 160), (0, 160), (0, 160)))
 
-    nuggets = color_thresh_between(img, ((100, 255), (100, 255), (20, 30)))
+    nuggets = color_thresh_between(img, ((100, 255), (90, 245), (0, 60)))
 
     return ground, obstacles, nuggets
 
@@ -95,12 +95,16 @@ def perspect_transform(img, src, dst):
     
     return warped
 
+def impose_range(xpix, ypix, range=80):
+    dist = np.sqrt(xpix**2 + ypix**2)
+    return xpix[dist < range], ypix[dist < range]
+
 
 # Apply the above functions in succession and update the Rover state accordingly
 def perception_step(rover):
     # Perform perception steps to update Rover()
 
-    image = rover.img
+    image = rover.img.copy()
 
     # 1) Define source and destination points for perspective transform
 
@@ -126,6 +130,14 @@ def perception_step(rover):
     # 3) Apply color threshold to identify navigable terrain/obstacles/rock samples
     ground, obstacle, nugget = image_segmentation(warped)
 
+    # Mask the Obstacle View to only allow obstacles in the view (as described in #
+    # https://medium.com/@fernandojaruchenunes/udacity-robond-project-1-search-and-sample-return-2d8165a53a78)
+    obstacle_mask = np.ones_like(rover.img)
+    obstacle_mask[:, :] = 1
+    obstacle_mask = perspect_transform(obstacle_mask, source, destination)
+
+    obstacle = np.absolute(obstacle * obstacle_mask[:, :, 0])
+
     # 4) Update Rover.vision_image (this will be displayed on left side of screen)
     rover.vision_image[:, :, 0] = 255 * obstacle
     rover.vision_image[:, :, 1] = 255 * nugget
@@ -139,6 +151,9 @@ def perception_step(rover):
     # 6) Convert rover-centric pixel values to world coordinates
     scale = 10
     rover_xpos, rover_ypos, rover_yaw = rover.pos[0], rover.pos[1], rover.yaw
+
+    groundPix = impose_range(groundPix[0], groundPix[1])
+    obstaclePix = impose_range(obstaclePix[0], obstaclePix[1])
 
     groundWorld = pix_to_world(
         groundPix[0], groundPix[1], rover_xpos, rover_ypos, rover_yaw, rover.worldmap.shape[0], scale
