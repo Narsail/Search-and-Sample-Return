@@ -97,10 +97,10 @@ def perspect_transform(img, src, dst):
 
 
 # Apply the above functions in succession and update the Rover state accordingly
-def perception_step(Rover):
+def perception_step(rover):
     # Perform perception steps to update Rover()
 
-    image = Rover.img
+    image = rover.img
 
     # 1) Define source and destination points for perspective transform
 
@@ -127,9 +127,9 @@ def perception_step(Rover):
     ground, obstacle, nugget = image_segmentation(warped)
 
     # 4) Update Rover.vision_image (this will be displayed on left side of screen)
-    Rover.vision_image[:, :, 0] = 255 * obstacle
-    Rover.vision_image[:, :, 1] = 255 * nugget
-    Rover.vision_image[:, :, 2] = 255 * ground
+    rover.vision_image[:, :, 0] = 255 * obstacle
+    rover.vision_image[:, :, 1] = 255 * nugget
+    rover.vision_image[:, :, 2] = 255 * ground
 
     # 5) Convert map image pixel values to rover-centric coords
     groundPix = rover_coords(ground)
@@ -138,27 +138,26 @@ def perception_step(Rover):
 
     # 6) Convert rover-centric pixel values to world coordinates
     scale = 10
-    rover_xpos, rover_ypos, rover_yaw = Rover.pos[0], Rover.pos[1], Rover.yaw
+    rover_xpos, rover_ypos, rover_yaw = rover.pos[0], rover.pos[1], rover.yaw
 
     groundWorld = pix_to_world(
-        groundPix[0], groundPix[1], rover_xpos, rover_ypos, rover_yaw, Rover.worldmap.shape[0], scale
+        groundPix[0], groundPix[1], rover_xpos, rover_ypos, rover_yaw, rover.worldmap.shape[0], scale
     )
     obstacleWorld = pix_to_world(
-        obstaclePix[0], obstaclePix[1], rover_xpos, rover_ypos, rover_yaw, Rover.worldmap.shape[0], scale
+        obstaclePix[0], obstaclePix[1], rover_xpos, rover_ypos, rover_yaw, rover.worldmap.shape[0], scale
     )
     nuggetWorld = pix_to_world(
-        nuggetPix[0], nuggetPix[1], rover_xpos, rover_ypos, rover_yaw, Rover.worldmap.shape[0], scale
+        nuggetPix[0], nuggetPix[1], rover_xpos, rover_ypos, rover_yaw, rover.worldmap.shape[0], scale
     )
 
     # 7) Update Rover worldmap (to be displayed on right side of screen)
-    Rover.worldmap[obstacleWorld[1], obstacleWorld[0], 0] += 1
-    Rover.worldmap[nuggetWorld[1], nuggetWorld[0], 1] += 1
-    Rover.worldmap[groundWorld[1], groundWorld[0], 2] += 1
+    rover.worldmap[obstacleWorld[1], obstacleWorld[0], 0] += 1
+    rover.worldmap[nuggetWorld[1], nuggetWorld[0], 1] += 1
+    rover.worldmap[groundWorld[1], groundWorld[0], 2] += 1
 
     # 8) Convert rover-centric pixel positions to polar coordinates
-    dist, angles = to_polar_coords(groundPix[0], groundPix[1])
+    rover.nav_dists, rover.nav_angles = to_polar_coords(groundPix[0], groundPix[1])
 
-    Rover.nav_dists = dist
-    Rover.nav_angles = angles
+    rover.nugget_dist, rover.nugget_angles = to_polar_coords(nuggetPix[0], nuggetPix[1])
 
-    return Rover
+    return rover

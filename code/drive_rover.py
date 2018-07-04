@@ -4,6 +4,7 @@ import shutil
 import base64
 from datetime import datetime
 import os
+
 import cv2
 import numpy as np
 import socketio
@@ -19,7 +20,7 @@ import time
 
 # Import functions for perception and decision making
 from perception import perception_step
-from decision import decision_step
+from decision import decision_step, Mode, DriveMode
 from supporting_functions import update_rover, create_output_images
 # Initialize socketio server and Flask application 
 # (learn more at: https://python-socketio.readthedocs.io/en/latest/)
@@ -34,6 +35,7 @@ ground_truth = mpimg.imread('../calibration_images/map_bw.png')
 # and puts the map into the green channel.  This is why the underlying 
 # map output looks green in the display image
 ground_truth_3d = np.dstack((ground_truth*0, ground_truth*255, ground_truth*0)).astype(np.float)
+
 
 # Define RoverState() class to retain rover state parameters
 class RoverState():
@@ -52,7 +54,8 @@ class RoverState():
         self.nav_angles = None # Angles of navigable terrain pixels
         self.nav_dists = None # Distances of navigable terrain pixels
         self.ground_truth = ground_truth_3d # Ground truth worldmap
-        self.mode = 'forward' # Current mode (can be forward or stop)
+        self.mode = Mode.LOCATE_NUGGET # Current Mode; Can be: 'Locate Nugget', 'Go to Nugget', 'Pick up Nugget', 'Go to Start'
+        self.drive_mode = DriveMode.FORWARD # Current Drive mode (can be forward or stop)
         self.throttle_set = 0.2 # Throttle setting when accelerating
         self.brake_set = 10 # Brake setting when braking
         # The stop_forward and go_forward fields below represent total count
@@ -65,7 +68,9 @@ class RoverState():
         # Image output from perception step
         # Update this image to display your intermediate analysis steps
         # on screen in autonomous mode
-        self.vision_image = np.zeros((160, 320, 3), dtype=np.float) 
+        self.vision_image = np.zeros((160, 320, 3), dtype=np.float)
+        self.nugget_angles = None
+        self.nugget_dist = None
         # Worldmap
         # Update this image with the positions of navigable terrain
         # obstacles and rock samples
@@ -77,6 +82,7 @@ class RoverState():
         self.near_sample = 0 # Will be set to telemetry value data["near_sample"]
         self.picking_up = 0 # Will be set to telemetry value data["picking_up"]
         self.send_pickup = False # Set to True to trigger rock pickup
+
 # Initialize our rover 
 Rover = RoverState()
 
