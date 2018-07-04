@@ -9,6 +9,7 @@ class Mode(Enum):
     GO_TO_NUGGET = 1
     PICK_UP_NUGGET = 2
     GO_TO_START = 3
+    FOUND_START = 4
 
 
 class DriveMode(Enum):
@@ -35,6 +36,8 @@ def decision_step(rover):
     print('## Current Mode: {}'.format(rover.mode))
     print('## Current Drive Mode: {}'.format(rover.drive_mode))
     print()
+    print('## Distance from Start: {}'.format(np.linalg.norm(np.asarray(rover.pos) - np.asarray(rover.start_pos))))
+    print('## Distance from visible nugget: {}'.format(np.mean(rover.nugget_dist)))
 
     if rover.mode == Mode.LOCATE_NUGGET:
 
@@ -50,7 +53,12 @@ def decision_step(rover):
 
     elif rover.mode == Mode.GO_TO_START:
 
-        locate_nugget(rover)
+        go_to_start(rover)
+
+    elif rover.mode == Mode.FOUND_START:
+        rover.steer = 0
+        rover.throttle = 0
+        rover.brake = rover.brake_set
 
     return rover
 
@@ -67,7 +75,7 @@ def pick_up_nugget(rover):
         rover.send_pickup = True
     elif not rover.near_sample:
 
-        if rover.samples_to_find > 0:
+        if rover.samples_to_find > rover.samples_collected:
             rover.mode = Mode.LOCATE_NUGGET
         else:
             rover.mode = Mode.GO_TO_START
@@ -88,15 +96,28 @@ def go_to_nugget(rover):
 
 def locate_nugget(rover):
 
-    nugget_threshold = 20
+    offset = 0
 
-    if rover.near_sample or len(rover.nugget_angles) > nugget_threshold:
+    if rover.total_time > 10:
+        offset = 0.8 * np.std(rover.nav_angles)
+
+    nugget_dist_threshold = 40
+
+    if rover.near_sample or np.mean(rover.nugget_dist) < nugget_dist_threshold:
         rover.mode = Mode.GO_TO_NUGGET
+    else:
+        drive(rover, rover.nav_angles, rover.max_vel, rover.stop_forward, rover.go_forward, offset)
+
+
+def go_to_start(rover):
+
+    if np.linalg.norm(np.asarray(rover.pos) - np.asarray(rover.start_pos)) < 5:
+        rover.mode = Mode.FOUND_START
     else:
         drive(rover, rover.nav_angles, rover.max_vel, rover.stop_forward, rover.go_forward)
 
 
-def drive(rover, nav_angles, max_vel, stop_forward, go_forward):
+def drive(rover, nav_angles, max_vel, stop_forward, go_forward, offset = 0):
     if nav_angles is not None:
         # Check for Rover.mode status
         if rover.drive_mode == DriveMode.FORWARD:
@@ -119,7 +140,7 @@ def drive(rover, nav_angles, max_vel, stop_forward, go_forward):
                     rover.throttle = 0
                 rover.brake = 0
                 # Set steering to average angle clipped to the range +/- 15
-                rover.steer = np.clip(np.mean(nav_angles * 180 / np.pi), -15, 15)
+                rover.steer = np.clip(np.mean((nav_angles + offset) * 180 / np.pi), -15, 15)
             # If there's a lack of navigable terrain pixels then go to 'stop' mode
             elif len(nav_angles) < stop_forward:
                 # Set mode to "stop" and hit the brakes!
@@ -139,7 +160,7 @@ def drive(rover, nav_angles, max_vel, stop_forward, go_forward):
                 # Release the brake to allow turning
                 rover.brake = 0
                 # Turn range is +/- 15 degrees, when stopped the next line will induce 4-wheel turning
-                rover.steer = 15 if rover.steer >= 0 else -15
+                rover.steer = -15
 
         # If we're already in "stop" mode then make different decisions
         elif rover.drive_mode == DriveMode.STOP:
@@ -156,7 +177,7 @@ def drive(rover, nav_angles, max_vel, stop_forward, go_forward):
                     # Release the brake to allow turning
                     rover.brake = 0
                     # Turn range is +/- 15 degrees, when stopped the next line will induce 4-wheel turning
-                    rover.steer = 15 # Could be more clever here about which way to turn
+                    rover.steer = -15 # Could be more clever here about which way to turn
                 # If we're stopped but see sufficient navigable terrain in front then go!
                 if len(nav_angles) >= go_forward:
                     # Set throttle back to stored value
@@ -164,7 +185,7 @@ def drive(rover, nav_angles, max_vel, stop_forward, go_forward):
                     # Release the brake
                     rover.brake = 0
                     # Set steer to mean angle
-                    rover.steer = np.clip(np.mean(nav_angles * 180 / np.pi), -15, 15)
+                    rover.steer = np.clip(np.mean((nav_angles + offset) * 180 / np.pi), -15, 15)
                     rover.drive_mode = DriveMode.FORWARD
     else:
         rover.throttle = rover.throttle_set
