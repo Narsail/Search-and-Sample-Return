@@ -86,14 +86,12 @@ def go_to_nugget(rover):
 
 def locate_nugget(rover):
 
-    nugget_threshold = 1
+    nugget_threshold = 20
 
-    drive(rover, rover.nav_angles, rover.max_vel, rover.stop_forward, rover.go_forward)
-
-    # if rover.near_sample or len(rover.nugget_angles) > nugget_threshold:
-    #     rover.mode = Mode.GO_TO_NUGGET
-    # else:
-    #     drive(rover, rover.nav_angles, rover.max_vel, rover.stop_forward, rover.go_forward)
+    if rover.near_sample or len(rover.nugget_angles) > nugget_threshold:
+        rover.mode = Mode.GO_TO_NUGGET
+    else:
+        drive(rover, rover.nav_angles, rover.max_vel, rover.stop_forward, rover.go_forward)
 
 
 def drive(rover, nav_angles, max_vel, stop_forward, go_forward):

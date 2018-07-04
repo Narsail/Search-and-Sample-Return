@@ -154,6 +154,7 @@ def perception_step(rover):
 
     groundPix = impose_range(groundPix[0], groundPix[1])
     obstaclePix = impose_range(obstaclePix[0], obstaclePix[1])
+    nuggetPix = impose_range(nuggetPix[0], nuggetPix[1])
 
     groundWorld = pix_to_world(
         groundPix[0], groundPix[1], rover_xpos, rover_ypos, rover_yaw, rover.worldmap.shape[0], scale
