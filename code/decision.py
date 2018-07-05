@@ -114,11 +114,13 @@ def go_to_start(rover):
 
     if np.linalg.norm(np.asarray(rover.pos) - np.asarray(rover.start_pos)) < 5:
         rover.mode = Mode.FOUND_START
+    elif np.linalg.norm(np.asarray(rover.pos) - np.asarray(rover.start_pos)) > 20:
+        drive(rover, rover.nav_angles, rover.max_vel, rover.stop_forward, rover.go_forward, 0.5 * np.std(rover.nav_angles))
     else:
         drive(rover, rover.nav_angles, rover.max_vel, rover.stop_forward, rover.go_forward)
 
 
-def drive(rover, nav_angles, max_vel, stop_forward, go_forward, offset = 0):
+def drive(rover, nav_angles, max_vel, stop_forward, go_forward, offset=0):
     if nav_angles is not None:
         # Check for Rover.mode status
         if rover.drive_mode == DriveMode.FORWARD:
