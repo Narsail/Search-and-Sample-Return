@@ -98,12 +98,13 @@ def locate_nugget(rover):
 
     offset = 0
 
-    if rover.total_time > 10:
-        offset = 0.8 * np.std(rover.nav_angles)
+    if rover.total_time > 20:
+        offset = 0.5 * np.std(rover.nav_angles)
 
-    nugget_dist_threshold = 40
+    nugget_dist_threshold = 60
+    nugget_threshold = 20
 
-    if rover.near_sample or np.mean(rover.nugget_dist) < nugget_dist_threshold:
+    if rover.near_sample or len(rover.nugget_angles) > nugget_threshold and np.mean(rover.nugget_dist) < nugget_dist_threshold:
         rover.mode = Mode.GO_TO_NUGGET
     else:
         drive(rover, rover.nav_angles, rover.max_vel, rover.stop_forward, rover.go_forward, offset)
