@@ -95,6 +95,9 @@ def perspect_transform(img, src, dst):
     
     return warped
 
+
+# Constrain the field of vision as described in (
+# https://medium.com/@fernandojaruchenunes/udacity-robond-project-1-search-and-sample-return-2d8165a53a78)
 def impose_range(xpix, ypix, range=80):
     dist = np.sqrt(xpix**2 + ypix**2)
     return xpix[dist < range], ypix[dist < range]
@@ -130,7 +133,7 @@ def perception_step(rover):
     # 3) Apply color threshold to identify navigable terrain/obstacles/rock samples
     ground, obstacle, nugget = image_segmentation(warped)
 
-    # Mask the Obstacle View to only allow obstacles in the view (as described in #
+    # Mask the Obstacle View to only allow obstacles in the view (as described in
     # https://medium.com/@fernandojaruchenunes/udacity-robond-project-1-search-and-sample-return-2d8165a53a78)
     obstacle_mask = np.ones_like(rover.img)
     obstacle_mask[:, :] = 1
@@ -152,6 +155,8 @@ def perception_step(rover):
     scale = 10
     rover_xpos, rover_ypos, rover_yaw = rover.pos[0], rover.pos[1], rover.yaw
 
+    # Constrain the field of vision as described in (
+    # https://medium.com/@fernandojaruchenunes/udacity-robond-project-1-search-and-sample-return-2d8165a53a78)
     groundPix = impose_range(groundPix[0], groundPix[1])
     obstaclePix = impose_range(obstaclePix[0], obstaclePix[1])
     nuggetPix = impose_range(nuggetPix[0], nuggetPix[1])

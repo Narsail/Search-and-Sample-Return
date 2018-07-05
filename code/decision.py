@@ -96,6 +96,8 @@ def go_to_nugget(rover):
 
 def locate_nugget(rover):
 
+    # Use an offset to tend to a specific side as described in
+    # https://medium.com/@fernandojaruchenunes/udacity-robond-project-1-search-and-sample-return-2d8165a53a78
     offset = 0
 
     if rover.total_time > 20:
@@ -126,6 +128,8 @@ def drive(rover, nav_angles, max_vel, stop_forward, go_forward, offset=0):
         if rover.drive_mode == DriveMode.FORWARD:
             # Check the extent of navigable terrain
             if len(nav_angles) >= stop_forward:
+                # Use the stuck mode as described in
+                # https://medium.com/@fernandojaruchenunes/udacity-robond-project-1-search-and-sample-return-2d8165a53a78
                 if rover.vel <= 0.1 and rover.total_time - rover.stuck_time > 4:
                     # Set mode to "stuck" and hit the brakes!
                     rover.throttle = 0
@@ -153,6 +157,8 @@ def drive(rover, nav_angles, max_vel, stop_forward, go_forward, offset=0):
                 rover.steer = 0
                 rover.drive_mode = DriveMode.STOP
 
+        # Use the stuck mode as described in
+        # https://medium.com/@fernandojaruchenunes/udacity-robond-project-1-search-and-sample-return-2d8165a53a78
         elif rover.drive_mode == DriveMode.STUCK:
             # if 1 sec passed go back to previous mode
             if rover.total_time - rover.stuck_time > 1:
